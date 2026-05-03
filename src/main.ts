@@ -1,3 +1,4 @@
+import { installRpcDebugWebSocketPatch } from "@/components/rpc-debug-panel/websocketPatch";
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 import { createPersistedState } from "pinia-plugin-persistedstate";
@@ -8,6 +9,8 @@ import routePrefetchPlugin from "./router/prefetchPlugin";
 import "./style/app.css";
 import en from "./locales/en";
 import zh_cn from "./locales/zh_cn";
+
+installRpcDebugWebSocketPatch();
 
 const app = createApp(App);
 const pinia = createPinia();

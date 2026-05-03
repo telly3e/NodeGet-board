@@ -33,17 +33,25 @@ interface PendingRequest {
   method: string;
 }
 
-const generateId = (): string => {
+interface WsCallOptions {
+  idPrefix?: string;
+  onRequestId?: (id: string) => void;
+}
+
+const generateId = (prefix = ""): string => {
+  let id: string;
   if (
     typeof crypto !== "undefined" &&
     typeof crypto.randomUUID === "function"
   ) {
-    return crypto.randomUUID();
+    id = crypto.randomUUID();
+  } else {
+    id = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+    });
   }
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
-  });
+  return `${prefix}${id}`;
 };
 
 const formatRpcError = (error: unknown): string => {
@@ -92,10 +100,16 @@ class WsConnection {
     }
   }
 
-  async call<T>(method: string, params: unknown, timeoutMs = 8000): Promise<T> {
+  async call<T>(
+    method: string,
+    params: unknown,
+    timeoutMs = 8000,
+    options?: WsCallOptions,
+  ): Promise<T> {
     await this.ensureConnected();
     return new Promise<T>((resolve, reject) => {
-      const id = generateId();
+      const id = generateId(options?.idPrefix);
+      options?.onRequestId?.(id);
       const timeout = setTimeout(() => {
         this.pending.delete(id);
         reject(new Error(`${method} request timeout`));
