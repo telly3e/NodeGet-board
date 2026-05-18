@@ -34,3 +34,6 @@ export const formatUptime = (uptime: number) => {
 export const formatTimestamp = (ts: number) => {
   return new Date(ts).toLocaleTimeString();
 };
+
+export const shorterUUID = (uuid: string, length: number = 8) =>
+  uuid.replace(/-/g, "").slice(0, length);

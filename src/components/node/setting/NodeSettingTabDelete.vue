@@ -159,8 +159,8 @@ async function handleDelete() {
 
     // will be cleared in js worker.
     // await afterAgentDelete(props.uuid, "data");
-  } catch {
-    // ignore
+  } catch (e) {
+    toast.error(e instanceof Error ? e.message : String(e));
   }
   setStep(2, "done");
 

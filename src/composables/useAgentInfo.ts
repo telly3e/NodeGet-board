@@ -26,6 +26,7 @@ import { useInFlightDedupe } from "@/composables/useInFlightDedupe";
 
 import { metaKey2Attr, type NodeMetadata } from "@/types/agent";
 import { groupBy } from "@/utils/groupBy";
+import { shorterUUID } from "@/utils/format";
 
 // ============ Types ============
 
@@ -119,7 +120,7 @@ export function useAgentInfo(
         Object.keys(grouped).forEach((uuid) => {
           const arr =
             grouped[uuid]?.map(({ key, value }) => ({ key, value })) ?? [];
-          const metadata = parseMetadataFields(arr, "节点" + uuid.slice(-6));
+          const metadata = parseMetadataFields(arr, "节点" + shorterUUID(uuid));
           metaMap.set(uuid, metadata);
         });
       }

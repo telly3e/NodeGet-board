@@ -8,6 +8,7 @@ import type { NodeMetadata } from "@/types/agent";
 import { useKv } from "@/composables/useKv";
 import { useNodeMetadata } from "@/composables/useNodeMetadata";
 import { useI18n } from "vue-i18n";
+import { shorterUUID } from "@/utils/format";
 
 const props = defineProps<{ uuid: string }>();
 
@@ -52,7 +53,7 @@ onMounted(async () => {
       ]);
     }
 
-    form.value = parseMetadataFields(results, props.uuid.slice(-6));
+    form.value = parseMetadataFields(results, shorterUUID(props.uuid));
   } catch (e: unknown) {
     toast.error(e instanceof Error ? e.message : t("dashboard.saveFailed"));
   } finally {
