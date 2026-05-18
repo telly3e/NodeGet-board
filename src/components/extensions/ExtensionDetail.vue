@@ -173,6 +173,8 @@ const saveFile = async () => {
       props.extension.id,
       selectedFile.value,
       encoded.buffer as ArrayBuffer,
+      undefined,
+      props.extension.storage,
     );
     fileContent.value = editedContent.value;
     toast.success("已保存");
@@ -195,6 +197,7 @@ const handleFileUpload = async (e: Event) => {
       selectedFile.value,
       content,
       file.type || undefined,
+      props.extension.storage,
     );
     fileContent.value = await new Response(content).text();
     toast.success("已上传");
@@ -353,7 +356,7 @@ const loadFileContent = async (path: string) => {
 
   fileLoading.value = true;
   try {
-    const url = getStaticUrl(props.extension.id, path);
+    const url = getStaticUrl(props.extension.id, path, props.extension.storage);
     const resp = await fetch(url);
     if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
     fileContent.value = await resp.text();

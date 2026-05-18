@@ -45,6 +45,7 @@ watch(
       m.ext.token,
       nodeUuid.value,
       m.ext.worker_name,
+      m.ext.storage,
     );
   },
   { immediate: true },

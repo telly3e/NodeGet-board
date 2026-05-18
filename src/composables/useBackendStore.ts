@@ -103,9 +103,14 @@ watch(
 );
 
 const addBackend = (backend: Backend) => {
-  backends.value.push(backend);
+  const parsed = new URL(backend.url);
+  const normalized: Backend = {
+    ...backend,
+    url: `${parsed.protocol}//${parsed.host}`,
+  };
+  backends.value.push(normalized);
   if (!currentBackend.value) {
-    currentBackend.value = backend;
+    currentBackend.value = normalized;
   }
 };
 

@@ -65,7 +65,16 @@ const handleSave = async () => {
   }
   saving.value = true;
   try {
-    await savePresets(presets.value);
+    const normalized = presets.value.map((p) => {
+      if (!p.backend_url) return p;
+      try {
+        const parsed = new URL(p.backend_url);
+        return { ...p, backend_url: `${parsed.protocol}//${parsed.host}` };
+      } catch {
+        return p;
+      }
+    });
+    await savePresets(normalized);
     toast.success("Token 预设已保存");
     emit("update:open", false);
   } catch (e: unknown) {

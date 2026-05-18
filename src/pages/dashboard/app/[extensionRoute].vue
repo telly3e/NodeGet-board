@@ -46,6 +46,7 @@ watch(
       m.ext.token,
       undefined,
       m.ext.worker_name,
+      m.ext.storage,
     );
   },
   { immediate: true },

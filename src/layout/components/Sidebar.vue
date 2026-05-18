@@ -205,7 +205,7 @@ const extensionGlobalRoutes = computed<SidebarRoute[]>(() =>
           meta: {
             title: r.name,
             icon: ext.app.icon
-              ? getStaticUrl(ext.id, ext.app.icon)
+              ? getStaticUrl(ext.id, ext.app.icon, ext.storage)
               : LayoutGrid,
             order: 100,
           },
@@ -226,7 +226,7 @@ const extensionNodeRoutes = computed<SidebarRoute[]>(() => {
           meta: {
             title: r.name,
             icon: ext.app.icon
-              ? getStaticUrl(ext.id, ext.app.icon)
+              ? getStaticUrl(ext.id, ext.app.icon, ext.storage)
               : LayoutGrid,
           },
         })),

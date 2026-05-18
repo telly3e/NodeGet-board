@@ -93,7 +93,7 @@ onMounted(() => {
     if (!exists) {
       addBackend(decoded);
       if (backends.value.length === 1) {
-        selectBackend(decoded);
+        selectBackend(backends.value[0]!);
       }
     }
   } catch {
