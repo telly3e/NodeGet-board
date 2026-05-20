@@ -72,6 +72,7 @@ import {
 import { useThemeStore } from "@/stores/theme";
 import { cn } from "@/lib/utils";
 import MarkdownIt from "markdown-it";
+import { base64ToBytes } from "@/lib/base64";
 
 definePage({
   meta: {
@@ -147,12 +148,18 @@ const parsedHttpResult = computed(() => {
   }
 
   // 2. Identify data source (prioritize binary)
-  let rawBody =
-    res.body_bytes !== undefined
-      ? res.body_bytes
-      : res.body !== undefined
-        ? res.body
-        : res.data;
+  let rawBody;
+
+  if (res.body_base64) {
+    rawBody = base64ToBytes(res.body_base64);
+  } else {
+    rawBody =
+      res.body_bytes !== undefined
+        ? res.body_bytes
+        : res.body !== undefined
+          ? res.body
+          : res.data;
+  }
 
   // 3. Process Body based on content type
   const isImage = contentType.includes("image/");
