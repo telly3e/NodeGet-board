@@ -33,7 +33,7 @@ import { useCron, type BackendCron } from "@/composables/useCron";
 import { useKv } from "@/composables/useKv";
 import { useBackendExtra } from "@/composables/useBackendExtra";
 import { useLifecycle } from "@/composables/useLifecycle";
-import { preGenerateToken } from "@/components/agents/generateToken";
+import { reGenerateToken } from "@/components/agents/generateToken";
 
 const open = defineModel<boolean>("open", { required: true });
 const emit = defineEmits<{
@@ -267,7 +267,7 @@ const canNext = computed(() => {
 const handleNext = async () => {
   if (step.value === 1) {
     // 预生成 token
-    generatedToken.value = (await preGenerateToken(nodeUuid.value)) || "";
+    generatedToken.value = (await reGenerateToken(nodeUuid.value)) || "";
     step.value = 2;
     loadCrons();
   } else if (step.value === 2) {
