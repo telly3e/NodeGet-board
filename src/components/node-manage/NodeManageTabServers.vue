@@ -196,7 +196,11 @@ function fetchVersion() {
   const repo = import.meta.env.VITE_RELEASE_REPO;
   return fetch(`https://api.github.com/repos/${repo}/releases`)
     .then((r) => r.json())
-    .then((r) => (r as { tag_name: string }[]).map((v) => v.tag_name))
+    .then((r) =>
+      (r as { tag_name: string }[])
+        .map((v) => v.tag_name)
+        .filter((v) => v.startsWith("v")),
+    )
     .then((r) => {
       availableVersions.value = r;
     })
