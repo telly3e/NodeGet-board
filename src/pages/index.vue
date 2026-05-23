@@ -1,22 +1,34 @@
 <script setup lang="ts">
-// deprecated
-
-import HeaderView from "@/components/HeaderView.vue";
-import FooterView from "@/components/FooterView.vue";
+import { onMounted } from "vue";
+import { useRouter } from "vue-router";
 import Loader from "@/components/misc/loader.vue";
+import loader2 from "@/components/misc/loader2.vue";
+import { useBackendStore } from "@/composables/useBackendStore";
+import Loader2 from "@/components/misc/loader2.vue";
+
+const router = useRouter();
+const { backends } = useBackendStore();
+
+onMounted(async () => {
+  await router.isReady();
+
+  if (backends.value.length === 0) {
+    await router.replace({
+      name: "/dashboard/node-manage",
+      query: {
+        fill: "empty",
+        tab: "servers",
+      },
+    });
+    return;
+  }
+
+  await router.replace({ name: "/dashboard/overview" });
+});
 </script>
 
 <template>
-  <div class="flex flex-col min-h-screen">
-    <div class="container mx-auto p-6 space-y-6 flex-1 flex flex-col">
-      <HeaderView status="connecting" />
-
-      <TransitionGroup tag="div" name="list" class="flex flex-1">
-        <div class="flex-col gap-4 w-full flex items-center justify-center">
-          <Loader></Loader>
-        </div>
-      </TransitionGroup>
-      <FooterView />
-    </div>
+  <div class="flex items-center justify-center h-screen">
+    <Loader />
   </div>
 </template>

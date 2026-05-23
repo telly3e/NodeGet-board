@@ -13,8 +13,8 @@ import TrafficBarChart, {
 
 definePage({ meta: { title: "router.node.traffic" } });
 
-const route = useRoute();
-const uuid = computed(() => (route.params as { uuid: string }).uuid);
+const route = useRoute("/dashboard/node/[uuid]/traffic");
+const uuid = computed(() => route.params.uuid);
 const { currentBackend } = useBackendStore();
 
 type SummaryPoint = {
