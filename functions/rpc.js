@@ -25,6 +25,17 @@ const replaceToken = (data, placeholder, token) => {
   return data.split(placeholder).join(token);
 };
 
+const getUpstreamFetchUrl = (backendWsUrl) => {
+  if (!backendWsUrl) return "";
+  if (backendWsUrl.startsWith("wss://")) {
+    return `https://${backendWsUrl.slice("wss://".length)}`;
+  }
+  if (backendWsUrl.startsWith("ws://")) {
+    return `http://${backendWsUrl.slice("ws://".length)}`;
+  }
+  return backendWsUrl;
+};
+
 export async function onRequest({ request, env }) {
   const url = new URL(request.url);
 
@@ -39,11 +50,14 @@ export async function onRequest({ request, env }) {
 
     if (env.NODEGET_BACKEND_WS) {
       try {
-        const upstreamResponse = await fetch(env.NODEGET_BACKEND_WS, {
-          headers: {
-            Upgrade: "websocket",
+        const upstreamResponse = await fetch(
+          getUpstreamFetchUrl(env.NODEGET_BACKEND_WS),
+          {
+            headers: {
+              Upgrade: "websocket",
+            },
           },
-        });
+        );
         const upstreamSocket = upstreamResponse.webSocket;
 
         if (upstreamSocket) {
@@ -91,11 +105,14 @@ export async function onRequest({ request, env }) {
 
   let upstreamResponse;
   try {
-    upstreamResponse = await fetch(env.NODEGET_BACKEND_WS, {
-      headers: {
-        Upgrade: "websocket",
+    upstreamResponse = await fetch(
+      getUpstreamFetchUrl(env.NODEGET_BACKEND_WS),
+      {
+        headers: {
+          Upgrade: "websocket",
+        },
       },
-    });
+    );
   } catch (error) {
     console.error("Failed to connect to NodeGet upstream WebSocket", {
       message: error instanceof Error ? error.message : String(error),
