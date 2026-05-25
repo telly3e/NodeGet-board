@@ -26,6 +26,43 @@ const replaceToken = (data, placeholder, token) => {
 };
 
 export async function onRequest({ request, env }) {
+  const url = new URL(request.url);
+
+  if (url.searchParams.has("debug")) {
+    const result = {
+      route: "ok",
+      hasBackendWs: Boolean(env.NODEGET_BACKEND_WS),
+      hasToken: Boolean(env.NODEGET_TOKEN),
+      hasAllowedEmails: Boolean(env.PRIVATE_PANEL_ALLOWED_EMAILS),
+      upstreamWebSocket: "skipped",
+    };
+
+    if (env.NODEGET_BACKEND_WS) {
+      try {
+        const upstreamResponse = await fetch(env.NODEGET_BACKEND_WS, {
+          headers: {
+            Upgrade: "websocket",
+          },
+        });
+        const upstreamSocket = upstreamResponse.webSocket;
+
+        if (upstreamSocket) {
+          upstreamSocket.accept({ allowHalfOpen: true });
+          closeSocket(upstreamSocket, 1000, "Debug probe complete");
+          result.upstreamWebSocket = "accepted";
+        } else {
+          result.upstreamWebSocket = `rejected:${upstreamResponse.status}`;
+        }
+      } catch (error) {
+        result.upstreamWebSocket = `error:${
+          error instanceof Error ? error.message : String(error)
+        }`;
+      }
+    }
+
+    return Response.json(result);
+  }
+
   const upgrade = request.headers.get("Upgrade");
   if (upgrade?.toLowerCase() !== "websocket") {
     return new Response("Expected WebSocket upgrade", { status: 426 });
@@ -43,19 +80,37 @@ export async function onRequest({ request, env }) {
   }
 
   if (!env.NODEGET_BACKEND_WS || !env.NODEGET_TOKEN) {
+    console.error("NodeGet private proxy is missing runtime bindings", {
+      hasBackendWs: Boolean(env.NODEGET_BACKEND_WS),
+      hasToken: Boolean(env.NODEGET_TOKEN),
+    });
     return new Response("Missing NODEGET_BACKEND_WS or NODEGET_TOKEN", {
       status: 500,
     });
   }
 
-  const upstreamResponse = await fetch(env.NODEGET_BACKEND_WS, {
-    headers: {
-      Upgrade: "websocket",
-    },
-  });
+  let upstreamResponse;
+  try {
+    upstreamResponse = await fetch(env.NODEGET_BACKEND_WS, {
+      headers: {
+        Upgrade: "websocket",
+      },
+    });
+  } catch (error) {
+    console.error("Failed to connect to NodeGet upstream WebSocket", {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return new Response("Failed to connect to upstream WebSocket", {
+      status: 502,
+    });
+  }
+
   const upstreamSocket = upstreamResponse.webSocket;
 
   if (!upstreamSocket) {
+    console.error("NodeGet upstream did not accept WebSocket", {
+      status: upstreamResponse.status,
+    });
     return new Response("Upstream did not accept WebSocket", { status: 502 });
   }
 
