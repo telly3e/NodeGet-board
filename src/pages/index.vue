@@ -5,12 +5,18 @@ import Loader from "@/components/misc/loader.vue";
 import loader2 from "@/components/misc/loader2.vue";
 import { useBackendStore } from "@/composables/useBackendStore";
 import Loader2 from "@/components/misc/loader2.vue";
+import { isPrivatePanelEnabled } from "@/config/privatePanel";
 
 const router = useRouter();
 const { backends } = useBackendStore();
 
 onMounted(async () => {
   await router.isReady();
+
+  if (isPrivatePanelEnabled()) {
+    await router.replace({ name: "/dashboard/overview" });
+    return;
+  }
 
   if (backends.value.length === 0) {
     await router.replace({

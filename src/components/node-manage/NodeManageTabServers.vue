@@ -47,8 +47,10 @@ import ShareDialog from "@/components/node-manage/ShareDialog.vue";
 import { compareVersions } from "compare-versions";
 import { getWsConnection } from "@/composables/useWsConnection";
 import codeCopy from "@/components/node-manage/codeCopy.vue";
+import { isPrivatePanelEnabled } from "@/config/privatePanel";
 
 const { t } = useI18n();
+const privatePanel = isPrivatePanelEnabled();
 const route = useRoute();
 const router = useRouter();
 const { backends, selectBackend, removeBackend, addBackend } =
@@ -257,7 +259,7 @@ fetchVersion();
           :class="{ 'animate-spin': serverInfoLoading }"
         />
       </Button>
-      <Button size="sm" @click="addOpen = true">
+      <Button v-if="!privatePanel" size="sm" @click="addOpen = true">
         <Plus class="mr-1.5 h-4 w-4" />
         {{ t("dashboard.servers.addServer") }}
       </Button>
@@ -382,6 +384,7 @@ fetchVersion();
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-1">
                 <Button
+                  v-if="!privatePanel"
                   size="icon"
                   variant="ghost"
                   class="h-8 w-8"
@@ -391,6 +394,7 @@ fetchVersion();
                   <CloudDownload class="h-4 w-4" />
                 </Button>
                 <Button
+                  v-if="!privatePanel"
                   size="icon"
                   variant="ghost"
                   class="h-8 w-8"
@@ -403,6 +407,7 @@ fetchVersion();
                   <Share2 class="h-4 w-4" />
                 </Button>
                 <PopConfirm
+                  v-if="!privatePanel"
                   :title="t('dashboard.servers.refreshConfirmTitle')"
                   :description="t('dashboard.servers.refreshConfirmDesc')"
                   :confirm-text="t('dashboard.servers.refreshConfirm')"
@@ -419,6 +424,7 @@ fetchVersion();
                   </Button>
                 </PopConfirm>
                 <Button
+                  v-if="!privatePanel"
                   size="icon"
                   variant="ghost"
                   class="h-8 w-8"
@@ -428,6 +434,7 @@ fetchVersion();
                   <Wrench class="h-4 w-4" />
                 </Button>
                 <PopConfirm
+                  v-if="!privatePanel"
                   :title="t('dashboard.servers.deleteConfirmTitle')"
                   :description="t('dashboard.servers.deleteConfirmDesc')"
                   :confirm-text="t('dashboard.servers.deleteConfirm')"
@@ -450,6 +457,7 @@ fetchVersion();
     </div>
 
     <BackendSwitcher
+      v-if="!privatePanel"
       v-model:open="addOpen"
       :init-form="initForm"
       :show-list="false"
@@ -461,7 +469,7 @@ fetchVersion();
       @select-version="confirmVersion"
     ></VersionDialog>
     <ShareDialog
-      v-if="shareOpen"
+      v-if="!privatePanel && shareOpen"
       :backend="shareBackend as Backend"
       v-model:open="shareOpen"
     ></ShareDialog>

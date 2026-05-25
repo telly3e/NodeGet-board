@@ -6,6 +6,7 @@ import { ServerCog } from "lucide-vue-next";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import NodeManageTabAgents from "@/components/node-manage/NodeManageTabAgents.vue";
 import NodeManageTabServers from "@/components/node-manage/NodeManageTabServers.vue";
+import { isPrivatePanelEnabled } from "@/config/privatePanel";
 
 definePage({
   meta: {
@@ -19,10 +20,13 @@ definePage({
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
+const privatePanel = isPrivatePanelEnabled();
 
 const activeTab = computed({
-  get: () => (route.query.tab as string) || "agents",
+  get: () =>
+    privatePanel ? "agents" : (route.query.tab as string) || "agents",
   set: (value) => {
+    if (privatePanel) return;
     // router.push({ query: { ...route.query, tab: value } });
     // if(value === 'agents'){
     //   router.push({ query: { tab: value } });
@@ -40,14 +44,14 @@ const activeTab = computed({
         <h1 class="text-2xl font-semibold">
           {{ t("dashboard.nodeManage.title") }}
         </h1>
-        <p class="text-sm text-muted-foreground mt-1">
+        <p class="mt-1 text-sm text-muted-foreground">
           {{ t("dashboard.nodeManage.desc") }}
         </p>
       </div>
     </div>
 
     <Tabs v-model="activeTab">
-      <TabsList>
+      <TabsList v-if="!privatePanel">
         <TabsTrigger value="agents">
           {{ t("dashboard.agents.title") }}
         </TabsTrigger>
@@ -59,7 +63,7 @@ const activeTab = computed({
       <TabsContent value="agents">
         <NodeManageTabAgents ref="agentsRef" />
       </TabsContent>
-      <TabsContent value="servers">
+      <TabsContent v-if="!privatePanel" value="servers">
         <NodeManageTabServers />
       </TabsContent>
     </Tabs>

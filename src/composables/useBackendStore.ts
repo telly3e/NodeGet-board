@@ -1,4 +1,8 @@
 import { ref, watch } from "vue";
+import {
+  getPrivateBackend,
+  isPrivatePanelEnabled,
+} from "@/config/privatePanel";
 
 export interface Backend {
   name: string;
@@ -22,6 +26,13 @@ export const normalizeUrl = (url: string): string => {
 };
 
 const init = () => {
+  if (isPrivatePanelEnabled()) {
+    const privateBackend = getPrivateBackend();
+    backends.value = [privateBackend];
+    currentBackend.value = privateBackend;
+    return;
+  }
+
   // Load backends from localStorage
   const storedBackends = localStorage.getItem(LS_KEY_BACKENDS);
   if (storedBackends) {
@@ -118,6 +129,7 @@ watch(
 );
 
 const addBackend = (backend: Backend) => {
+  if (isPrivatePanelEnabled()) return;
   const normalized: Backend = backend;
   backends.value.push(normalized);
   if (!currentBackend.value) {
@@ -126,6 +138,7 @@ const addBackend = (backend: Backend) => {
 };
 
 const removeBackend = (backend: Backend) => {
+  if (isPrivatePanelEnabled()) return;
   const index = backends.value.findIndex(
     (b) => b.url === backend.url && b.token === backend.token,
   ); // Simple check
@@ -135,6 +148,7 @@ const removeBackend = (backend: Backend) => {
 };
 
 const selectBackend = (backend: Backend) => {
+  if (isPrivatePanelEnabled()) return;
   currentBackend.value = backend;
 };
 

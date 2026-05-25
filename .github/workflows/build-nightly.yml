@@ -1,12 +1,8 @@
 name: Nightly Build
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  # Automatic triggers are intentionally disabled for this private fork.
+  # Run manually only when you want to publish a fresh private build.
   workflow_dispatch:
 
 permissions:

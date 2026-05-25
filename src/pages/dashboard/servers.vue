@@ -18,6 +18,7 @@ import {
 import { useBackendStore, type Backend } from "@/composables/useBackendStore";
 import BackendSwitcher from "@/components/BackendSwitcher.vue";
 import { getWsConnection } from "@/composables/useWsConnection";
+import { isPrivatePanelEnabled } from "@/config/privatePanel";
 
 definePage({
   meta: {
@@ -30,6 +31,7 @@ definePage({
 });
 
 const { t } = useI18n();
+const privatePanel = isPrivatePanelEnabled();
 const route = useRoute();
 const router = useRouter();
 const { backends, currentBackend, selectBackend, removeBackend, addBackend } =
@@ -115,7 +117,7 @@ onMounted(() => {
           {{ t("dashboard.servers.desc") }}
         </p>
       </div>
-      <Button @click="addOpen = true">
+      <Button v-if="!privatePanel" @click="addOpen = true">
         <Plus class="mr-1.5 h-4 w-4" />
         {{ t("dashboard.servers.addServer") }}
       </Button>
@@ -169,6 +171,7 @@ onMounted(() => {
             <TableCell class="text-right">
               <div class="flex items-center justify-end gap-1">
                 <Button
+                  v-if="!privatePanel"
                   size="icon"
                   variant="ghost"
                   class="h-8 w-8"
@@ -177,6 +180,7 @@ onMounted(() => {
                   <Wrench class="h-4 w-4" />
                 </Button>
                 <PopConfirm
+                  v-if="!privatePanel"
                   :title="t('dashboard.servers.deleteConfirmTitle')"
                   :description="t('dashboard.servers.deleteConfirmDesc')"
                   :confirm-text="t('dashboard.servers.deleteConfirm')"
@@ -198,6 +202,10 @@ onMounted(() => {
       </Table>
     </div>
 
-    <BackendSwitcher v-model:open="addOpen" :show-list="false" />
+    <BackendSwitcher
+      v-if="!privatePanel"
+      v-model:open="addOpen"
+      :show-list="false"
+    />
   </div>
 </template>
