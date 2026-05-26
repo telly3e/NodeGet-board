@@ -1,7 +1,7 @@
 import {
   createPrivateSessionToken,
   parseAllowedEmails,
-} from "./_shared/privateSession.js";
+} from "../_shared/privateSession.js";
 
 const noStoreHeaders = {
   "Cache-Control": "private, no-store, no-cache, must-revalidate",

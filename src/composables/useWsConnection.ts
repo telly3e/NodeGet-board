@@ -87,7 +87,7 @@ const getPrivateRpcSessionUrl = async (url: string): Promise<string> => {
     return url;
   }
 
-  const response = await fetch("/rpc-session", {
+  const response = await fetch("/api/rpc-session", {
     cache: "no-store",
     credentials: "same-origin",
   });
