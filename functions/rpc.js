@@ -136,7 +136,7 @@ export async function onRequest({ request, env }) {
   const tokenPlaceholder =
     env.NODEGET_TOKEN_PLACEHOLDER || DEFAULT_TOKEN_PLACEHOLDER;
 
-  server.accept({ allowHalfOpen: true });
+  server.accept();
   upstreamSocket.accept({ allowHalfOpen: true });
 
   server.addEventListener("message", (event) => {
