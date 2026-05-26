@@ -1,4 +1,5 @@
 import {
+  getPrivatePanelPublicHost,
   parseAllowedEmails,
   verifyPrivateSessionToken,
 } from "./_shared/privateSession.js";
@@ -44,6 +45,7 @@ export async function onRequest({ request, env }) {
       hasBackendWs: Boolean(env.NODEGET_BACKEND_WS),
       hasToken: Boolean(env.NODEGET_TOKEN),
       hasAllowedEmails: Boolean(env.PRIVATE_PANEL_ALLOWED_EMAILS),
+      publicHost: getPrivatePanelPublicHost(env, request),
       upstreamWebSocket: "skipped",
     };
 
@@ -90,7 +92,7 @@ export async function onRequest({ request, env }) {
   const hasValidSession = await verifyPrivateSessionToken({
     allowedEmails,
     env,
-    host: url.host,
+    host: getPrivatePanelPublicHost(env, request),
     token: url.searchParams.get("session"),
   });
 

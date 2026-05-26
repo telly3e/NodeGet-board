@@ -1,5 +1,6 @@
 import {
   createPrivateSessionToken,
+  getPrivatePanelPublicHost,
   parseAllowedEmails,
 } from "../_shared/privateSession.js";
 
@@ -29,11 +30,12 @@ export async function onRequest({ request, env }) {
   }
 
   let session;
+  const publicHost = getPrivatePanelPublicHost(env, request);
   try {
     session = await createPrivateSessionToken({
       email,
       env,
-      host: new URL(request.url).host,
+      host: publicHost,
     });
   } catch (error) {
     console.error("Failed to create private RPC session", {
@@ -46,6 +48,7 @@ export async function onRequest({ request, env }) {
   }
 
   const rpcUrl = new URL(request.url);
+  rpcUrl.host = publicHost;
   rpcUrl.pathname = "/rpc";
   rpcUrl.search = "";
   rpcUrl.protocol = rpcUrl.protocol === "https:" ? "wss:" : "ws:";

@@ -6,6 +6,25 @@ export const parseAllowedEmails = (value) =>
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean);
 
+const normalizeHost = (value) => {
+  const trimmed = (value || "").trim();
+  if (!trimmed) return "";
+
+  try {
+    const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)
+      ? trimmed
+      : `https://${trimmed}`;
+    return new URL(withScheme).host;
+  } catch {
+    return trimmed.split("/")[0] || "";
+  }
+};
+
+export const getPrivatePanelPublicHost = (env, request) =>
+  normalizeHost(env.PRIVATE_PANEL_PUBLIC_HOST) ||
+  normalizeHost(request.headers.get("X-Forwarded-Host")?.split(",")[0]) ||
+  new URL(request.url).host;
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
