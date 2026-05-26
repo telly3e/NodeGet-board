@@ -34,6 +34,10 @@ import { useKv } from "@/composables/useKv";
 import { useBackendExtra } from "@/composables/useBackendExtra";
 import { useLifecycle } from "@/composables/useLifecycle";
 import { reGenerateToken } from "@/components/agents/generateToken";
+import {
+  getPrivateAgentWsUrl,
+  isPrivatePanelEnabled,
+} from "@/config/privatePanel";
 
 const open = defineModel<boolean>("open", { required: true });
 const emit = defineEmits<{
@@ -167,6 +171,17 @@ const isOnline = ref(false);
 const isCopied = ref(false);
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
+const agentServerWs = computed(() => {
+  if (isPrivatePanelEnabled()) {
+    return getPrivateAgentWsUrl() || "{Server_WS}";
+  }
+  return (
+    currentBackendInfo.value?.agentConfigWsUrl ||
+    currentBackendInfo.value?.url ||
+    "{Server_WS}"
+  );
+});
+
 const checkOnline = async () => {
   if (!currentBackendInfo.value) return;
   try {
@@ -238,15 +253,11 @@ onUnmounted(stopPolling);
 const installScript = computed(() => {
   const uuid = nodeUuid.value || "{AGENT_UUID}";
   const token = generatedToken.value || "{TOKEN}";
-  const serverWs =
-    currentBackendInfo.value?.agentConfigWsUrl ||
-    currentBackendInfo.value?.url ||
-    "{Server_WS}";
   const serverName = currentBackendInfo.value?.name || "{Server_NAME}";
   return `bash <(curl -sL ${import.meta.env.VITE_INSTALL_URL}) install-agent  \\
   --agent-id "${uuid}" \\
   --token "${token}" \\
-  --server-ws "${serverWs}" \\
+  --server-ws "${agentServerWs.value}" \\
   --server-id "${currentBackendInfo.value?.uuid}" \\
   --server-name "${serverName}"`;
 });
@@ -376,7 +387,9 @@ const steps = [
           <div class="space-y-2">
             <Label>{{ t("dashboard.agents.fieldServerUrl") }}</Label>
             <Input
-              :model-value="currentBackendInfo?.agentConfigWsUrl ?? '--'"
+              :model-value="
+                agentServerWs === '{Server_WS}' ? '--' : agentServerWs
+              "
               readonly
               class="text-muted-foreground"
             />

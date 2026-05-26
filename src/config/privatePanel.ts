@@ -8,6 +8,9 @@ const truthy = (value: string | undefined) =>
 export const isPrivatePanelEnabled = () =>
   truthy(import.meta.env.VITE_PRIVATE_PANEL);
 
+export const getPrivateAgentWsUrl = () =>
+  import.meta.env.VITE_PRIVATE_AGENT_WS?.trim() || "";
+
 const getSameOriginRpcUrl = () => {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   return `${protocol}//${window.location.host}/rpc`;
