@@ -82,21 +82,20 @@ export async function onRequest({ request, env }) {
   }
 
   const allowedEmails = parseAllowedEmails(env.PRIVATE_PANEL_ALLOWED_EMAILS);
-  if (allowedEmails.length > 0) {
-    const email = (
-      request.headers.get("Cf-Access-Authenticated-User-Email") || ""
-    ).toLowerCase();
-    const isAllowedAccessEmail = email && allowedEmails.includes(email);
-    const hasValidSession = await verifyPrivateSessionToken({
-      allowedEmails,
-      env,
-      host: url.host,
-      token: url.searchParams.get("session"),
-    });
+  const email = (
+    request.headers.get("Cf-Access-Authenticated-User-Email") || ""
+  ).toLowerCase();
+  const isAllowedAccessEmail =
+    email && (allowedEmails.length === 0 || allowedEmails.includes(email));
+  const hasValidSession = await verifyPrivateSessionToken({
+    allowedEmails,
+    env,
+    host: url.host,
+    token: url.searchParams.get("session"),
+  });
 
-    if (!isAllowedAccessEmail && !hasValidSession) {
-      return new Response("Forbidden", { status: 403 });
-    }
+  if (!isAllowedAccessEmail && !hasValidSession) {
+    return new Response("Forbidden", { status: 403 });
   }
 
   if (!env.NODEGET_BACKEND_WS || !env.NODEGET_TOKEN) {
