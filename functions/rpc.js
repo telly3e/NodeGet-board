@@ -1,10 +1,9 @@
-const DEFAULT_TOKEN_PLACEHOLDER = "__NODEGET_PRIVATE_TOKEN__";
+import {
+  parseAllowedEmails,
+  verifyPrivateSessionToken,
+} from "./_shared/privateSession.js";
 
-const parseAllowedEmails = (value) =>
-  (value || "")
-    .split(",")
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
+const DEFAULT_TOKEN_PLACEHOLDER = "__NODEGET_PRIVATE_TOKEN__";
 
 const closeSocket = (socket, code = 1011, reason = "Proxy closed") => {
   try {
@@ -87,8 +86,15 @@ export async function onRequest({ request, env }) {
     const email = (
       request.headers.get("Cf-Access-Authenticated-User-Email") || ""
     ).toLowerCase();
+    const isAllowedAccessEmail = email && allowedEmails.includes(email);
+    const hasValidSession = await verifyPrivateSessionToken({
+      allowedEmails,
+      env,
+      host: url.host,
+      token: url.searchParams.get("session"),
+    });
 
-    if (!allowedEmails.includes(email)) {
+    if (!isAllowedAccessEmail && !hasValidSession) {
       return new Response("Forbidden", { status: 403 });
     }
   }

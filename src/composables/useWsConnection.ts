@@ -11,6 +11,7 @@
  */
 
 import { useBackendStore } from "@/composables/useBackendStore";
+import { isPrivatePanelEnabled } from "@/config/privatePanel";
 
 const { currentBackend } = useBackendStore();
 const HEARTBEAT_INTERVAL_MS = 30_000;
@@ -36,6 +37,10 @@ interface PendingRequest {
 interface WsCallOptions {
   idPrefix?: string;
   onRequestId?: (id: string) => void;
+}
+
+interface PrivateRpcSessionResponse {
+  rpcUrl?: unknown;
 }
 
 const generateId = (prefix = ""): string => {
@@ -65,6 +70,36 @@ const formatRpcError = (error: unknown): string => {
   } catch {
     return "";
   }
+};
+
+const isSameOriginRpcUrl = (url: string): boolean => {
+  if (typeof window === "undefined") return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.host === window.location.host && parsed.pathname === "/rpc";
+  } catch {
+    return false;
+  }
+};
+
+const getPrivateRpcSessionUrl = async (url: string): Promise<string> => {
+  if (!isPrivatePanelEnabled() || !isSameOriginRpcUrl(url)) {
+    return url;
+  }
+
+  const response = await fetch("/rpc-session", {
+    cache: "no-store",
+    credentials: "same-origin",
+  });
+  if (!response.ok) {
+    throw new Error(`RPC session check failed (${response.status})`);
+  }
+
+  const body = (await response.json()) as PrivateRpcSessionResponse;
+  if (typeof body.rpcUrl !== "string" || !body.rpcUrl) {
+    throw new Error("RPC session response is missing rpcUrl");
+  }
+  return body.rpcUrl;
 };
 
 class WsConnection {
@@ -203,47 +238,54 @@ class WsConnection {
     if (this.ws?.readyState === WebSocket.OPEN) return Promise.resolve();
     if (this.connectPromise) return this.connectPromise;
 
-    this.connectPromise = new Promise<void>((resolve, reject) => {
-      const ws = new WebSocket(this.url);
-      this.ws = ws;
+    this.connectPromise = (async () => {
+      const connectUrl = await getPrivateRpcSessionUrl(this.url);
 
-      ws.onopen = () => {
-        this.connectPromise = null;
-        this.startHeartbeat();
-        resolve();
-      };
+      await new Promise<void>((resolve, reject) => {
+        const ws = new WebSocket(connectUrl);
+        this.ws = ws;
 
-      ws.onerror = () => {
-        this.connectPromise = null;
-        this.ws = null;
-        reject(new Error(`WebSocket connection error: ${this.url}`));
-      };
+        ws.onopen = () => {
+          this.connectPromise = null;
+          this.startHeartbeat();
+          resolve();
+        };
 
-      ws.onclose = () => {
-        this.connectPromise = null;
-        this.ws = null;
-        this.stopHeartbeat();
-        // Reject all in-flight requests so they don't hang until timeout
-        for (const [id, req] of this.pending) {
-          clearTimeout(req.timeout);
-          req.reject(new Error(`${req.method} connection closed`));
-          this.pending.delete(id);
-        }
-      };
+        ws.onerror = () => {
+          this.connectPromise = null;
+          this.ws = null;
+          reject(new Error(`WebSocket connection error: ${this.url}`));
+        };
 
-      ws.onmessage = (event: MessageEvent) => {
-        let parsed: unknown;
-        try {
-          parsed = JSON.parse(event.data as string);
-        } catch {
-          return;
-        }
-        if (Array.isArray(parsed)) {
-          for (const item of parsed) this.handleMessage(item as WsRpcMessage);
-        } else {
-          this.handleMessage(parsed as WsRpcMessage);
-        }
-      };
+        ws.onclose = () => {
+          this.connectPromise = null;
+          this.ws = null;
+          this.stopHeartbeat();
+          // Reject all in-flight requests so they don't hang until timeout
+          for (const [id, req] of this.pending) {
+            clearTimeout(req.timeout);
+            req.reject(new Error(`${req.method} connection closed`));
+            this.pending.delete(id);
+          }
+        };
+
+        ws.onmessage = (event: MessageEvent) => {
+          let parsed: unknown;
+          try {
+            parsed = JSON.parse(event.data as string);
+          } catch {
+            return;
+          }
+          if (Array.isArray(parsed)) {
+            for (const item of parsed) this.handleMessage(item as WsRpcMessage);
+          } else {
+            this.handleMessage(parsed as WsRpcMessage);
+          }
+        };
+      });
+    })().catch((error) => {
+      this.connectPromise = null;
+      throw error;
     });
 
     return this.connectPromise;
