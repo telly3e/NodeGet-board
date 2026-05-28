@@ -12,9 +12,17 @@ const isPublicAuthPath = (pathname) =>
   pathname === "/oauth/callback" ||
   pathname === "/oauth/logout";
 
+const isPublicAssetPath = (pathname) =>
+  pathname === "/manifest.json" ||
+  pathname === "/browserconfig.xml" ||
+  pathname === "/favicon.ico" ||
+  pathname === "/logo.png" ||
+  pathname === "/theme-init.js" ||
+  /^\/(?:android-icon|apple-icon|favicon|ms-icon)-.+\.png$/i.test(pathname);
+
 const wantsHtml = (request) => {
   const accept = request.headers.get("Accept") || "";
-  return accept.includes("text/html") || accept.includes("*/*");
+  return accept.includes("text/html");
 };
 
 const getReturnPath = (request) => {
@@ -33,7 +41,7 @@ export async function onRequest(context) {
   }
 
   const url = new URL(request.url);
-  if (isPublicAuthPath(url.pathname)) {
+  if (isPublicAuthPath(url.pathname) || isPublicAssetPath(url.pathname)) {
     return context.next();
   }
 

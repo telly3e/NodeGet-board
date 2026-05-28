@@ -46,3 +46,14 @@ PRIVATE_PANEL_OIDC_TEAM_DOMAIN=your-team.cloudflareaccess.com
 You can use `PRIVATE_PANEL_OIDC_DISCOVERY_URL` instead of
 `PRIVATE_PANEL_OIDC_TEAM_DOMAIN` if you prefer to paste the full OIDC
 configuration endpoint from Cloudflare.
+
+If `NODEGET_BACKEND_WS` is still behind a Cloudflare Access self-hosted
+application, create an Access service token for that upstream app and set:
+
+```text
+NODEGET_BACKEND_ACCESS_CLIENT_ID=access_service_token_client_id
+NODEGET_BACKEND_ACCESS_CLIENT_SECRET=access_service_token_client_secret
+```
+
+The browser-to-dashboard WebSocket uses the dashboard OAuth session; the
+dashboard-to-upstream WebSocket uses these service token headers.

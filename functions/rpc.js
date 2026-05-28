@@ -37,6 +37,61 @@ const getUpstreamFetchUrl = (backendWsUrl) => {
   return backendWsUrl;
 };
 
+const getUpstreamAccessServiceToken = (env) => ({
+  clientId:
+    env.NODEGET_BACKEND_ACCESS_CLIENT_ID ||
+    env.NODEGET_BACKEND_CF_ACCESS_CLIENT_ID ||
+    "",
+  clientSecret:
+    env.NODEGET_BACKEND_ACCESS_CLIENT_SECRET ||
+    env.NODEGET_BACKEND_CF_ACCESS_CLIENT_SECRET ||
+    "",
+});
+
+const getUpstreamWebSocketHeaders = (env) => {
+  const headers = new Headers({
+    Upgrade: "websocket",
+  });
+  const { clientId, clientSecret } = getUpstreamAccessServiceToken(env);
+
+  if (clientId && clientSecret) {
+    headers.set("CF-Access-Client-Id", clientId);
+    headers.set("CF-Access-Client-Secret", clientSecret);
+  }
+
+  if (env.NODEGET_BACKEND_WS_ORIGIN) {
+    headers.set("Origin", env.NODEGET_BACKEND_WS_ORIGIN);
+  }
+
+  return headers;
+};
+
+const getSafeUpstreamDebug = (env) => {
+  const upstreamUrl = getUpstreamFetchUrl(env.NODEGET_BACKEND_WS);
+  const { clientId, clientSecret } = getUpstreamAccessServiceToken(env);
+
+  let host = "";
+  try {
+    host = upstreamUrl ? new URL(upstreamUrl).host : "";
+  } catch {
+    host = "invalid";
+  }
+
+  return {
+    hasBackendAccessServiceToken: Boolean(clientId && clientSecret),
+    upstreamHost: host,
+  };
+};
+
+const getResponseHint = async (response) => {
+  try {
+    const text = await response.clone().text();
+    return text.replace(/\s+/g, " ").trim().slice(0, 240);
+  } catch {
+    return "";
+  }
+};
+
 export async function onRequest({ request, env }) {
   const url = new URL(request.url);
 
@@ -48,6 +103,7 @@ export async function onRequest({ request, env }) {
       hasAllowedEmails: Boolean(env.PRIVATE_PANEL_ALLOWED_EMAILS),
       publicHost: getPrivatePanelPublicHost(env, request),
       upstreamWebSocket: "skipped",
+      ...getSafeUpstreamDebug(env),
     };
 
     if (env.NODEGET_BACKEND_WS) {
@@ -55,9 +111,7 @@ export async function onRequest({ request, env }) {
         const upstreamResponse = await fetch(
           getUpstreamFetchUrl(env.NODEGET_BACKEND_WS),
           {
-            headers: {
-              Upgrade: "websocket",
-            },
+            headers: getUpstreamWebSocketHeaders(env),
           },
         );
         const upstreamSocket = upstreamResponse.webSocket;
@@ -68,6 +122,7 @@ export async function onRequest({ request, env }) {
           result.upstreamWebSocket = "accepted";
         } else {
           result.upstreamWebSocket = `rejected:${upstreamResponse.status}`;
+          result.upstreamResponseHint = await getResponseHint(upstreamResponse);
         }
       } catch (error) {
         result.upstreamWebSocket = `error:${
@@ -112,9 +167,7 @@ export async function onRequest({ request, env }) {
     upstreamResponse = await fetch(
       getUpstreamFetchUrl(env.NODEGET_BACKEND_WS),
       {
-        headers: {
-          Upgrade: "websocket",
-        },
+        headers: getUpstreamWebSocketHeaders(env),
       },
     );
   } catch (error) {
