@@ -3,6 +3,7 @@ import {
   parseAllowedEmails,
   verifyPrivateSessionToken,
 } from "./_shared/privateSession.js";
+import { getAllowedEmailFromRequest } from "./_shared/oauthAccess.js";
 
 const DEFAULT_TOKEN_PLACEHOLDER = "__NODEGET_PRIVATE_TOKEN__";
 
@@ -84,11 +85,7 @@ export async function onRequest({ request, env }) {
   }
 
   const allowedEmails = parseAllowedEmails(env.PRIVATE_PANEL_ALLOWED_EMAILS);
-  const email = (
-    request.headers.get("Cf-Access-Authenticated-User-Email") || ""
-  ).toLowerCase();
-  const isAllowedAccessEmail =
-    email && (allowedEmails.length === 0 || allowedEmails.includes(email));
+  const email = await getAllowedEmailFromRequest({ env, request });
   const hasValidSession = await verifyPrivateSessionToken({
     allowedEmails,
     env,
@@ -96,7 +93,7 @@ export async function onRequest({ request, env }) {
     token: url.searchParams.get("session"),
   });
 
-  if (!isAllowedAccessEmail && !hasValidSession) {
+  if (!email && !hasValidSession) {
     return new Response("Forbidden", { status: 403 });
   }
 

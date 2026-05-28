@@ -3,6 +3,7 @@ import {
   getPrivatePanelPublicHost,
   parseAllowedEmails,
 } from "../_shared/privateSession.js";
+import { getAllowedEmailFromRequest } from "../_shared/oauthAccess.js";
 
 const noStoreHeaders = {
   "Cache-Control": "private, no-store, no-cache, must-revalidate",
@@ -14,9 +15,7 @@ export async function onRequest({ request, env }) {
   }
 
   const allowedEmails = parseAllowedEmails(env.PRIVATE_PANEL_ALLOWED_EMAILS);
-  const email = (
-    request.headers.get("Cf-Access-Authenticated-User-Email") || ""
-  ).toLowerCase();
+  const email = await getAllowedEmailFromRequest({ env, request });
 
   if (!email) {
     return new Response("Cloudflare Access session required", {

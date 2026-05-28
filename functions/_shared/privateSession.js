@@ -1,4 +1,4 @@
-const SESSION_TTL_SECONDS = 90;
+const RPC_SESSION_TTL_SECONDS = 90;
 
 export const parseAllowedEmails = (value) =>
   (value || "")
@@ -53,13 +53,11 @@ const fromBase64Url = (value) => {
   return bytes;
 };
 
-const encodeJson = (value) =>
+export const encodeJson = (value) =>
   toBase64Url(encoder.encode(JSON.stringify(value)));
 
-const decodeJson = (value) => JSON.parse(decoder.decode(fromBase64Url(value)));
-
-const getSessionSecret = (env) =>
-  env.PRIVATE_PANEL_SESSION_SECRET || env.NODEGET_TOKEN;
+export const decodeJson = (value) =>
+  JSON.parse(decoder.decode(fromBase64Url(value)));
 
 const sign = async (payload, secret) => {
   const key = await crypto.subtle.importKey(
@@ -85,7 +83,16 @@ const safeEqual = (left, right) => {
   return diff === 0;
 };
 
-export const createPrivateSessionToken = async ({ env, email, host }) => {
+export const getSessionSecret = (env) =>
+  env.PRIVATE_PANEL_SESSION_SECRET || env.NODEGET_TOKEN;
+
+export const createSignedSessionToken = async ({
+  env,
+  email,
+  host,
+  purpose,
+  ttlSeconds,
+}) => {
   const secret = getSessionSecret(env);
   if (!secret) {
     throw new Error("Missing PRIVATE_PANEL_SESSION_SECRET or NODEGET_TOKEN");
@@ -93,23 +100,25 @@ export const createPrivateSessionToken = async ({ env, email, host }) => {
 
   const payload = encodeJson({
     email: email.toLowerCase(),
-    exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
+    exp: Math.floor(Date.now() / 1000) + ttlSeconds,
     host,
     nonce: crypto.randomUUID(),
+    purpose,
   });
   const signature = await sign(payload, secret);
 
   return {
-    expiresIn: SESSION_TTL_SECONDS,
+    expiresIn: ttlSeconds,
     token: `${payload}.${signature}`,
   };
 };
 
-export const verifyPrivateSessionToken = async ({
+export const verifySignedSessionToken = async ({
   token,
   env,
   host,
   allowedEmails,
+  purpose,
 }) => {
   if (!token) return false;
 
@@ -123,6 +132,7 @@ export const verifyPrivateSessionToken = async ({
     const data = decodeJson(payload);
     if (!data || typeof data !== "object") return false;
     if (data.host !== host) return false;
+    if (data.purpose !== purpose) return false;
     if (
       typeof data.exp !== "number" ||
       data.exp < Math.floor(Date.now() / 1000)
@@ -137,8 +147,26 @@ export const verifyPrivateSessionToken = async ({
     }
 
     const expected = await sign(payload, secret);
-    return safeEqual(signature, expected);
+    if (!safeEqual(signature, expected)) return false;
+    return data;
   } catch {
     return false;
   }
 };
+
+export const createPrivateSessionToken = ({ env, email, host }) =>
+  createSignedSessionToken({
+    email,
+    env,
+    host,
+    purpose: "rpc",
+    ttlSeconds: RPC_SESSION_TTL_SECONDS,
+  });
+
+export const verifyPrivateSessionToken = async (options) =>
+  Boolean(
+    await verifySignedSessionToken({
+      ...options,
+      purpose: "rpc",
+    }),
+  );
