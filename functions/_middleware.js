@@ -1,5 +1,5 @@
 import {
-  getAllowedEmailFromRequest,
+  getSiteSessionEmailFromRequest,
   isOidcEnabled,
 } from "./_shared/oauthAccess.js";
 
@@ -45,7 +45,7 @@ export async function onRequest(context) {
     return context.next();
   }
 
-  const email = await getAllowedEmailFromRequest({ env, request });
+  const email = await getSiteSessionEmailFromRequest({ env, request });
   if (email) {
     return context.next();
   }

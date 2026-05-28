@@ -3,7 +3,6 @@ import {
   parseAllowedEmails,
   verifyPrivateSessionToken,
 } from "./_shared/privateSession.js";
-import { getAllowedEmailFromRequest } from "./_shared/oauthAccess.js";
 
 const DEFAULT_TOKEN_PLACEHOLDER = "__NODEGET_PRIVATE_TOKEN__";
 
@@ -37,27 +36,10 @@ const getUpstreamFetchUrl = (backendWsUrl) => {
   return backendWsUrl;
 };
 
-const getUpstreamAccessServiceToken = (env) => ({
-  clientId:
-    env.NODEGET_BACKEND_ACCESS_CLIENT_ID ||
-    env.NODEGET_BACKEND_CF_ACCESS_CLIENT_ID ||
-    "",
-  clientSecret:
-    env.NODEGET_BACKEND_ACCESS_CLIENT_SECRET ||
-    env.NODEGET_BACKEND_CF_ACCESS_CLIENT_SECRET ||
-    "",
-});
-
 const getUpstreamWebSocketHeaders = (env) => {
   const headers = new Headers({
     Upgrade: "websocket",
   });
-  const { clientId, clientSecret } = getUpstreamAccessServiceToken(env);
-
-  if (clientId && clientSecret) {
-    headers.set("CF-Access-Client-Id", clientId);
-    headers.set("CF-Access-Client-Secret", clientSecret);
-  }
 
   if (env.NODEGET_BACKEND_WS_ORIGIN) {
     headers.set("Origin", env.NODEGET_BACKEND_WS_ORIGIN);
@@ -68,7 +50,6 @@ const getUpstreamWebSocketHeaders = (env) => {
 
 const getSafeUpstreamDebug = (env) => {
   const upstreamUrl = getUpstreamFetchUrl(env.NODEGET_BACKEND_WS);
-  const { clientId, clientSecret } = getUpstreamAccessServiceToken(env);
 
   let host = "";
   try {
@@ -78,7 +59,6 @@ const getSafeUpstreamDebug = (env) => {
   }
 
   return {
-    hasBackendAccessServiceToken: Boolean(clientId && clientSecret),
     upstreamHost: host,
   };
 };
@@ -140,7 +120,6 @@ export async function onRequest({ request, env }) {
   }
 
   const allowedEmails = parseAllowedEmails(env.PRIVATE_PANEL_ALLOWED_EMAILS);
-  const email = await getAllowedEmailFromRequest({ env, request });
   const hasValidSession = await verifyPrivateSessionToken({
     allowedEmails,
     env,
@@ -148,7 +127,7 @@ export async function onRequest({ request, env }) {
     token: url.searchParams.get("session"),
   });
 
-  if (!email && !hasValidSession) {
+  if (!hasValidSession) {
     return new Response("Forbidden", { status: 403 });
   }
 

@@ -1,9 +1,8 @@
 import {
   createPrivateSessionToken,
   getPrivatePanelPublicHost,
-  parseAllowedEmails,
 } from "../_shared/privateSession.js";
-import { getAllowedEmailFromRequest } from "../_shared/oauthAccess.js";
+import { getSiteSessionEmailFromRequest } from "../_shared/oauthAccess.js";
 
 const noStoreHeaders = {
   "Cache-Control": "private, no-store, no-cache, must-revalidate",
@@ -14,18 +13,13 @@ export async function onRequest({ request, env }) {
     return new Response("Method not allowed", { status: 405 });
   }
 
-  const allowedEmails = parseAllowedEmails(env.PRIVATE_PANEL_ALLOWED_EMAILS);
-  const email = await getAllowedEmailFromRequest({ env, request });
+  const email = await getSiteSessionEmailFromRequest({ env, request });
 
   if (!email) {
-    return new Response("Cloudflare Access session required", {
+    return new Response("Private panel session required", {
       headers: noStoreHeaders,
       status: 401,
     });
-  }
-
-  if (allowedEmails.length > 0 && !allowedEmails.includes(email)) {
-    return new Response("Forbidden", { headers: noStoreHeaders, status: 403 });
   }
 
   let session;

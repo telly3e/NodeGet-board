@@ -348,18 +348,8 @@ export const exchangeCode = async ({ env, request, code }) => {
   return data;
 };
 
-export const getAllowedEmailFromRequest = async ({ env, request }) => {
+export const getSiteSessionEmailFromRequest = async ({ env, request }) => {
   const allowedEmails = parseAllowedEmails(env.PRIVATE_PANEL_ALLOWED_EMAILS);
-  const accessEmail = (
-    request.headers.get("Cf-Access-Authenticated-User-Email") || ""
-  ).toLowerCase();
-  if (
-    accessEmail &&
-    (allowedEmails.length === 0 || allowedEmails.includes(accessEmail))
-  ) {
-    return accessEmail;
-  }
-
   const cookies = parseCookies(request);
   const session = await verifySignedSessionToken({
     allowedEmails,
